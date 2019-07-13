@@ -47,6 +47,25 @@ REGISTRATION = [
     },
 ]
 
+EDITPROFILE = [
+    {
+        'name': 'firstname',
+        'label': 'First name',
+        'type': 'text'
+    },
+    {
+        'name': 'lastname',
+        'label': 'Last name',
+        'type': 'text'
+    },
+    {
+        'name': 'email',
+        'label': 'Email',
+        'type': 'email',
+        'small-text': 'Your login will change if you change this.'
+    }
+]
+
 @app.route("/")
 def mainpage():
     print(get_flashed_messages())
@@ -138,7 +157,7 @@ def editprofile():
     mysql = connectToMySQL(dbname)
     users = mysql.query_db("SELECT id, firstname, lastname, email, created_at FROM users WHERE id = %(id)s", {'id': session['id']})
     if len(users) > 0:
-        return render_template("editprofile.html", user = users[0])
+        return render_template("editprofile.html", user = users[0], EDITPROFILE=EDITPROFILE)
     else:
         flash("Aw snap! Something went wrong. Try again in a few hours", "error")
         return redirect("/success")
@@ -156,6 +175,10 @@ def updateprofile():
         return redirect("/success")
     else:
         return redirect("editprofile")
+
+@app.route("/changepasswd")
+def changepasswd():
+    return render_template("change_password.html")
 
 if __name__ == "__main__":
     app.run(debug=True)
