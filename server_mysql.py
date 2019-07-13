@@ -106,7 +106,7 @@ def register():
     if len(request.form['lastname']) < 2:
         flash("Last name must have at least two characters", "lastname")
         errors = True
-    if request.form['password'] != request.form['confirm']:
+    if (request.form['confirm'] == "") or (request.form['password'] != request.form['confirm']):
         flash("Passwords do not match", "confirm")
         errors = True
     if not errors:
