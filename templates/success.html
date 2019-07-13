@@ -1,0 +1,51 @@
+{% extends "master.html" %}
+
+{% block title %}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    {% with errors = get_flashed_messages(category_filter=['error']) %}
+    {% for message in errors %}
+    <div class="alert alert-danger" role="alert">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endwith %}
+    {% with successes = get_flashed_messages(category_filter=['success']) %}
+    {% for message in successes %}
+    <div class="alert alert-success" role="alert">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endwith %}
+
+    <div class="jumbotron">
+        <h1 class="display-4">Welcome, {{session['firstname']}}!</h1>
+        <p class="lead">Hope you're doing well today, {{session['firstname']}}.</p>
+        <hr class="my-4">
+        <div class="row">
+            <div class="col col-lg-3 col-sm-5 col-xs-5">
+                <div class="dropdown">
+                    <button class="btn btn-primary btn-lg btn-block dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Profile
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        <a class="dropdown-item" href="/viewprofile">View</a>
+                        <a class="dropdown-item" href="/editprofile">Edit</a>
+                        <a class="dropdown-item" href="/deleteprofile">Delete</a>
+                        <a class="dropdown-item" href="/changepasswd">Change password</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col col-lg-6 col-sm-2 col-xs-2"></div>
+            <div class="col col-lg-3 col-sm-5 col-xs-5">
+                <a class="btn btn-danger btn-lg btn-block" href="/logout" role="button">Logout</a>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+
