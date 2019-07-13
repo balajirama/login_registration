@@ -24,62 +24,22 @@
         <div class="col col-lg-5">
             <h1 class="display-4">Registration</h1>
             <form action="/register" method="POST">
+                {% for item in REGISTRATION %}
                 <div class="form-group">
-                    <label>First name</label>
-                    {% with msgs = get_flashed_messages(category_filter=['firstname']) %}
+                    <label>{{item['label']}}</label>
+                    {% with msgs = get_flashed_messages(category_filter=[item['name']]) %}
                     {% for msg in msgs %}
                     <div class="alert alert-danger" role="alert">
                         {{msg}}
                     </div>
                     {% endfor %}
                     {% endwith %}
-                    <input type="text" class="form-control" name="firstname" placeholder="Jane" value="{{session['reg']['firstname']}}">
+                    <input type="{{item['type']}}" class="form-control" name="{{item['name']}}" placeholder="{{item['placeholder']}}" value="{{session['reg'][item['name']]}}">
+                    {% if 'small-text' in item %}
+                    <small id='emailHelp' class='form-text text-muted'>{{item['small-text']}}</small>
+                    {% endif %}
                 </div>
-                <div class="form-group">
-                    <label>Last name</label>
-                    {% with msgs = get_flashed_messages(category_filter=['lastname']) %}
-                    {% for msg in msgs %}
-                    <div class="alert alert-danger" role="alert">
-                        {{msg}}
-                    </div>
-                    {% endfor %}
-                    {% endwith %}
-                    <input type="text" class="form-control" name="lastname" placeholder="Doe" value="{{session['reg']['lastname']}}">
-                </div>
-                <div class="form-group">
-                    <label>Email address</label>
-                    {% with msgs = get_flashed_messages(category_filter=['email']) %}
-                    {% for msg in msgs %}
-                    <div class="alert alert-danger" role="alert">
-                        {{msg}}
-                    </div>
-                    {% endfor %}
-                    {% endwith %}
-                    <input type="email" class="form-control" name="email" aria-describedby="emailHelp" placeholder="Enter email" value="{{session['reg']['email']}}">
-                    <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    {% with msgs = get_flashed_messages(category_filter=['password']) %}
-                    {% for msg in msgs %}
-                    <div class="alert alert-danger" role="alert">
-                        {{msg}}
-                    </div>
-                    {% endfor %}
-                    {% endwith %}
-                    <input type="password" class="form-control" name="password" placeholder="Password">
-                </div>
-                <div class="form-group">
-                    <label>Confirm password</label>
-                    {% with msgs = get_flashed_messages(category_filter=['confirm']) %}
-                    {% for msg in msgs %}
-                    <div class="alert alert-danger" role="alert">
-                        {{msg}}
-                    </div>
-                    {% endfor %}
-                    {% endwith %}
-                    <input type="password" class="form-control" name="confirm" placeholder="Password">
-                </div>
+                {% endfor %}
                 <button type="submit" class="btn btn-primary">Register</button>
             </form>
         </div>
@@ -90,7 +50,6 @@
                 <div class="form-group">
                     <label>Email address</label>
                     <input type="email" class="form-control" name="loginemail" aria-describedby="emailHelp" placeholder="Enter email">
-                    <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
                 </div>
                 <div class="form-group">
                     <label for="exampleInputPassword1">Password</label>

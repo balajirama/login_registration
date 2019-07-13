@@ -13,7 +13,7 @@ app.secret_key = 'darksecret'
 dbname = 'login_users'
 EMAIL_REGEXP = re.compile(r"^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9]+\.[a-zA-Z]+$")
 
-FIELDS = [
+REGISTRATION = [
     {
         'label': 'First name',
         'name': 'firstname',
@@ -30,8 +30,8 @@ FIELDS = [
         'label': 'Email',
         'name': 'email',
         'type': 'text',
-        'placeholder': 'Jane',
-        'small-text': "<small id='emailHelp' class='form-text text-muted'>We'll never share your email with anyone else.</small>"
+        'placeholder': 'me@example.com',
+        'small-text': "We'll never share your email with anyone else."
     },
     {
         'label': 'Password',
@@ -43,7 +43,7 @@ FIELDS = [
         'label': 'Confirm password',
         'name': 'confirm',
         'type': 'password',
-        'placeholder': 'Confirm password'
+        'placeholder': 'Password'
     },
 ]
 
@@ -56,7 +56,7 @@ def mainpage():
             'lastname': "",
             'email': ""
         }
-    return render_template("index.html")
+    return render_template("index.html", REGISTRATION=REGISTRATION)
 
 @app.route("/login", methods=["POST"])
 def login():
