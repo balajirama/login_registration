@@ -13,78 +13,11 @@ app.secret_key = 'darksecret'
 dbname = 'login_users'
 EMAIL_REGEXP = re.compile(r"^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9]+\.[a-zA-Z]+$")
 
-REGISTRATION = [
-    {
-        'label': 'First name',
-        'name': 'firstname',
-        'type': 'text',
-        'placeholder': 'Jane'
-    },
-    {
-        'label': 'Last name',
-        'name': 'lastname',
-        'type': 'text',
-        'placeholder': 'Doe'
-    },
-    {
-        'label': 'Email',
-        'name': 'email',
-        'type': 'text',
-        'placeholder': 'me@example.com',
-        'small-text': "We'll never share your email with anyone else."
-    },
-    {
-        'label': 'Password',
-        'name': 'password',
-        'type': 'password',
-        'placeholder': 'Password'
-    },
-    {
-        'label': 'Confirm password',
-        'name': 'confirm',
-        'type': 'password',
-        'placeholder': 'Password'
-    },
-]
-
-EDITPROFILE = [
-    {
-        'name': 'id',
-        'label': "",
-        'type': 'hidden'
-    },
-    {
-        'name': 'firstname',
-        'label': 'First name',
-        'type': 'text'
-    },
-    {
-        'name': 'lastname',
-        'label': 'Last name',
-        'type': 'text'
-    },
-    {
-        'name': 'email',
-        'label': 'Email',
-        'type': 'email',
-        'small-text': 'Your login will change if you change this.'
-    },
-]
-
-EDITPASSWORD = [
-    {
-        'name': 'currentpassword',
-        'label': 'Current password',
-    },
-    {
-        'name': 'newpassword',
-        'label': 'New password',
-    },
-    {
-        'name': 'confirm',
-        'label': 'Confirm password'
-    }
-]
+sql = {'db': connectToMySQL(dbname)}
+EDITPASSWORD = sql['db'].query_db("SELECT * FROM editpassword_form;")
+REGISTRATION = sql['db'].query_db("SELECT * FROM registration_form;")
+EDITPROFILE  = sql['db'].query_db("SELECT * FROM editprofile_form;")
+del sql['db']
 
 @app.route("/")
 def mainpage():
@@ -155,7 +88,11 @@ def register():
 
 @app.route("/success")
 def success():
-    return render_template("success.html")
+    if 'id' in session:
+        return render_template("success.html")
+    else:
+        flash("You're not yet logged in", "error")
+        return redirect("/")
 
 @app.route("/logout")
 def logout():

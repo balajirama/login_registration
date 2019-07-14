@@ -34,8 +34,8 @@
             {% endfor %}
             {% endwith %}
             <input type="{{item['type']}}" class="form-control" placeholder="{{user[item['name']]}}" name="{{item['name']}}" value="{{user[item['name']]}}">
-            {% if item['small-text'] != None %}
-            <small id="emailHelp" class="form-text text-muted">{{item['small-text']}}</small>
+            {% if item['small_text'] != None %}
+            <small id="emailHelp" class="form-text text-muted">{{item['small_text']}}</small>
             {% endif %}
         </div>
         {% endfor %}

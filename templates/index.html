@@ -9,6 +9,9 @@
     {% for message in errors %}
     <div class="alert alert-danger" role="alert">
         {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
     </div>
     {% endfor %}
     {% endwith %}
@@ -16,6 +19,9 @@
     {% for message in successes %}
     <div class="alert alert-success" role="alert">
         {{ message }}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
     </div>
     {% endfor %}
     {% endwith %}
@@ -31,16 +37,20 @@
                     {% for msg in msgs %}
                     <div class="alert alert-danger" role="alert">
                         {{msg}}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
                     </div>
                     {% endfor %}
                     {% endwith %}
                     <input type="{{item['type']}}" class="form-control" name="{{item['name']}}" placeholder="{{item['placeholder']}}" value="{{session['reg'][item['name']]}}">
-                    {% if item['small-text'] != None %}
-                    <small id='emailHelp' class='form-text text-muted'>{{item['small-text']}}</small>
+                    {% if item['small_text'] != None %}
+                    <small id='emailHelp' class='form-text text-muted'>{{item['small_text']}}</small>
                     {% endif %}
                 </div>
                 {% endfor %}
-                <button type="submit" class="btn btn-primary">Register</button>
+                <button type="submit" class="btn btn-primary btn-lg">Register</button>
+                <button type="reset" class="btn btn-secondary btn-lg">Reset</button>
             </form>
         </div>
         <div class="col col-xl-1 col-lg-2 col-md-2 col-sm-12 col-xs-12"></div>
@@ -48,14 +58,14 @@
             <h1 class="display-4">Login</h1>
             <form action="/login" method="post">
                 <div class="form-group">
-                    <label>Email address</label>
+                    <label>Email</label>
                     <input type="email" class="form-control" name="loginemail" aria-describedby="emailHelp" placeholder="Enter email">
                 </div>
                 <div class="form-group">
-                    <label for="exampleInputPassword1">Password</label>
+                    <label>Password</label>
                     <input type="password" class="form-control" name="loginpassword" placeholder="Password">
                 </div>
-                <button type="submit" class="btn btn-primary">Log in</button>
+                <button type="submit" class="btn btn-primary btn-lg">Log in</button>
             </form>
         </div>
     </div>
@@ -63,4 +73,8 @@
 </div>
 {% endblock %}
 
-
+{% block morescripts %}
+<script>
+    $('.alert').alert();
+</script>
+{% endblock %}
