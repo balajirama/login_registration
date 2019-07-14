@@ -24,6 +24,8 @@ class MySQLConnection:
                 self.connection.commit()
                 if query.lower().find('insert') >= 0:
                     return cursor.lastrowid
+                else:
+                    return True
         except Exception as e:
             print("ERROR:", e)
             return False

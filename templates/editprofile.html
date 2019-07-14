@@ -33,7 +33,7 @@
             </div>
             {% endfor %}
             {% endwith %}
-            <input type="{{item['type']}}" class="form-control" placeholder="{{user[item['name']]}}" name="{{item[name]}}" value="{{user[item['name']]}}">
+            <input type="{{item['type']}}" class="form-control" placeholder="{{user[item['name']]}}" name="{{item['name']}}" value="{{user[item['name']]}}">
             {% if item['small-text'] != None %}
             <small id="emailHelp" class="form-text text-muted">{{item['small-text']}}</small>
             {% endif %}
@@ -50,10 +50,12 @@
                 <button type="submit" class="btn btn-block btn-danger btn-lg">Update profile</button>
             </div>
             <div class="col col-lg-3">
-                <a href="/deleteprofile" class="btn btn-block btn-secondary btn-lg">Delete profile</a>
+                <a data-target="#confirmdelete" data-toggle="modal" class="btn btn-block btn-secondary btn-lg">Delete profile</a>
             </div>
         </div>
     </form>
+
+    {% include "confirmdelete.html" %}
 
 </div>
 {% endblock %}

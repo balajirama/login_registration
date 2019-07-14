@@ -49,6 +49,11 @@ REGISTRATION = [
 
 EDITPROFILE = [
     {
+        'name': 'id',
+        'label': "",
+        'type': 'hidden'
+    },
+    {
         'name': 'firstname',
         'label': 'First name',
         'type': 'text'
@@ -63,6 +68,21 @@ EDITPROFILE = [
         'label': 'Email',
         'type': 'email',
         'small-text': 'Your login will change if you change this.'
+    },
+]
+
+EDITPASSWORD = [
+    {
+        'name': 'currentpassword',
+        'label': 'Current password',
+    },
+    {
+        'name': 'newpassword',
+        'label': 'New password',
+    },
+    {
+        'name': 'confirm',
+        'label': 'Confirm password'
     }
 ]
 
@@ -162,23 +182,66 @@ def editprofile():
         flash("Aw snap! Something went wrong. Try again in a few hours", "error")
         return redirect("/success")
 
-@app.route("/updateprofile")
+@app.route("/updateprofile", methods=['POST'])
 def updateprofile():
     mysql = connectToMySQL(dbname)
-    errors = False
+    is_valid = True
     if len(request.form['firstname']) < 2:
-        flash("First name must have at least two characters", "error")
-        errors = True
-    if not errors:
-        mysql.query_db("UPDATE users SET firstname = %(firstname)s, lastname = %(lastname)s, email = %(email)s WHERE id = %(id)s;", request.form)
-        flash("Updated your profile", "success")
+        flash("First name must have at least two characters", "firstname")
+        is_valid = False
+    if len(request.form['lastname']) < 2:
+        is_valid = False
+        flash("Last name must have at least two characters", "lastname")
+    if not EMAIL_REGEXP.match(request.form['email']):
+        is_valid = False
+        flash("Email not in correct format", 'email')
+    if is_valid:
+        status = mysql.query_db("UPDATE users SET firstname = %(firstname)s, lastname = %(lastname)s, email = %(email)s WHERE id = %(id)s;", request.form)
+        if status:
+            flash("Updated your profile", "success")
+        else:
+            flash("Something went wrong. It's us, not you. Try again later.", "error")
         return redirect("/success")
     else:
-        return redirect("editprofile")
+        return redirect("/editprofile")
 
 @app.route("/changepasswd")
 def changepasswd():
-    return render_template("change_password.html")
+    return render_template("change_password.html", EDITPASSWORD=EDITPASSWORD)
+
+@app.route("/updatepassword", methods=['POST'])
+def updatepassword():
+    mysql = connectToMySQL(dbname)
+    rows = mysql.query_db("SELECT id, pswdhash FROM users WHERE id = %(id)s", {'id': session['id']})
+    is_valid = True
+    if len(rows) == 0:
+        is_valid = False
+        flash("Passwords cannot be updated now. Please try again later", "error")
+        return redirect("/success")
+    if not bcrypt.check_password_hash(rows[0]['pswdhash'], request.form['currentpassword']):
+        is_valid = False
+        flash('Current password does not match', 'currentpassword')
+    if len(request.form['newpassword']) < 2:
+        is_valid = False
+        flash("Password must be at least two characters long", "newpassword")
+    if (request.form == "") or (request.form['newpassword'] != request.form['confirm']):
+        is_valid = False
+        flash("Password confirmation must match", "confirm")
+    if not is_valid:
+        return redirect("/changepasswd")
+    else:
+        status = mysql.query_db("UPDATE users SET pswdhash = %(pswdhash)s WHERE id = %(id)s", rows[0])
+        if status:
+            flash('Password changed', 'success')
+        else:
+            flash("Something went wrong in saving your new password. Password did not change.", "error")
+        return redirect("/success")
+
+@app.route("/deleteprofile")
+def deleteprofile():
+    mysql = connectToMySQL(dbname)
+    mysql.query_db("DELETE FROM users WHERE id = %(id)s", {'id': session['id']})
+    return redirect("/logout")
 
 if __name__ == "__main__":
     app.run(debug=True)

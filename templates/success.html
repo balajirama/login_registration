@@ -31,10 +31,10 @@
                         Profile
                     </button>
                     <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                        <a class="dropdown-item" href="/viewprofile">View</a>
-                        <a class="dropdown-item" href="/editprofile">Edit</a>
-                        <a class="dropdown-item" href="/deleteprofile">Delete</a>
+                        <a class="dropdown-item" href="/viewprofile">View Profile</a>
+                        <a class="dropdown-item" href="/editprofile">Edit Profile</a>
                         <a class="dropdown-item" href="/changepasswd">Change password</a>
+                        <a class="dropdown-item" data-toggle="modal" data-target="#confirmdelete">Delete Profile</a>
                     </div>
                 </div>
             </div>
@@ -44,6 +44,8 @@
             </div>
         </div>
     </div>
+
+    {% include "confirmdelete.html" %}
 
 </div>
 {% endblock %}
