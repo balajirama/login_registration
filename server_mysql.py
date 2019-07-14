@@ -12,11 +12,14 @@ app.secret_key = 'darksecret'
 
 dbname = 'login_users'
 EMAIL_REGEXP = re.compile(r"^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9]+\.[a-zA-Z]+$")
+NUM_REGEX = re.compile(r"^.*[0-9]+.*")
+CAP_REGEX = re.compile(r"^.*[A-Z]+.*")
 
 sql = {'db': connectToMySQL(dbname)}
-EDITPASSWORD = sql['db'].query_db("SELECT * FROM editpassword_form;")
-REGISTRATION = sql['db'].query_db("SELECT * FROM registration_form;")
-EDITPROFILE  = sql['db'].query_db("SELECT * FROM editprofile_form;")
+EDITPASSWORD = sql['db'].query_db("SELECT * FROM editpassword_form ORDER BY itemid;")
+REGISTRATION = sql['db'].query_db("SELECT * FROM registration_form ORDER BY itemid;")
+EDITPROFILE  = sql['db'].query_db("SELECT * FROM editprofile_form ORDER BY itemid;")
+LANGUAGES    = sql['db'].query_db("SELECT * FROM languages ORDER BY itemid;")
 del sql['db']
 
 @app.route("/")
@@ -28,7 +31,7 @@ def mainpage():
             'lastname': "",
             'email': ""
         }
-    return render_template("index.html", REGISTRATION=REGISTRATION)
+    return render_template("index.html", REGISTRATION=REGISTRATION, LANGUAGES=LANGUAGES)
 
 @app.route("/login", methods=["POST"])
 def login():
@@ -46,30 +49,52 @@ def login():
 
 @app.route("/register", methods=["POST"])
 def register():
-    errors = False
+    is_valid = True
+    print(request.form)
     if not EMAIL_REGEXP.match(request.form['email']):
         flash("Not a valid email", "email")
-        errors = True
+        is_valid = False
     if len(request.form['password']) < 8:
         flash("Your password must be at least eight characters", "password")
-        errors = True
+        is_valid = False
+    if not(NUM_REGEX.match(request.form['password']) and CAP_REGEX.match(request.form['password'])):
+        flash("Password must contain at least one capital letter and one digit", "password")
+        is_valid = False
     if len(request.form['firstname']) < 2:
         flash("First name must have at least two characters", "firstname")
-        errors = True
+        is_valid = False
     if len(request.form['lastname']) < 2:
         flash("Last name must have at least two characters", "lastname")
-        errors = True
+        is_valid = False
     if (request.form['confirm'] == "") or (request.form['password'] != request.form['confirm']):
         flash("Passwords do not match", "confirm")
-        errors = True
-    if not errors:
+        is_valid = False
+    dob = datetime.strptime(request.form['dob'], "%Y-%m-%d")
+    today = datetime.today()
+    if (today - dob).days / 365 < 10.0:
+        is_valid = False
+        flash("You're too young to register", "dob")
+    langcount = 0
+    langstr = ""
+    for language in LANGUAGES:
+        if language['name'] in request.form:
+            langcount += 1
+            if len(langstr) > 0:
+                langstr += " "
+            langstr += language['name']
+    if langcount < 2:
+        flash("Select at least two languages", "languages")
+        is_valid = False
+    if is_valid:
         mysql = connectToMySQL(dbname)
         if len(mysql.query_db("SELECT * FROM users WHERE email = %(email)s", request.form)) == 0:
             data = dict()
             for name in request.form.keys():
                 data[name] = request.form[name]
             data['pswdhash'] = bcrypt.generate_password_hash(request.form['password'])
-            status = mysql.query_db("INSERT INTO users ( firstname, lastname, email, pswdhash, created_at ) VALUES ( %(firstname)s, %(lastname)s, %(email)s, %(pswdhash)s, NOW() ) ;", data)
+            data['dob'] = dob
+            data['languages'] = langstr
+            status = mysql.query_db("INSERT INTO users ( firstname, lastname, email, pswdhash, created_at, updated_at, dob, languages ) VALUES ( %(firstname)s, %(lastname)s, %(email)s, %(pswdhash)s, NOW(), NOW(), %(dob)s, %(languages)s ) ;", data)
             if status:
                 flash("Successfully registered "+request.form['email']+". Try logging in!", "success")
                 if 'reg' in session:
@@ -102,7 +127,7 @@ def logout():
 @app.route("/viewprofile")
 def viewprofile():
     mysql = connectToMySQL(dbname)
-    users = mysql.query_db("SELECT id, firstname, lastname, email, created_at FROM users WHERE id = %(id)s", {'id': session['id']})
+    users = mysql.query_db("SELECT id, firstname, lastname, email, created_at, dob FROM users WHERE id = %(id)s", {'id': session['id']})
     if len(users) > 0:
         return render_template("profile.html", user = users[0])
     else:
@@ -112,9 +137,14 @@ def viewprofile():
 @app.route("/editprofile")
 def editprofile():
     mysql = connectToMySQL(dbname)
-    users = mysql.query_db("SELECT id, firstname, lastname, email, created_at FROM users WHERE id = %(id)s", {'id': session['id']})
+    users = mysql.query_db("SELECT id, firstname, lastname, email, created_at, dob FROM users WHERE id = %(id)s", {'id': session['id']})
+    userdata = dict()
+    for key in users[0].keys():
+        userdata[key] = users[0][key]
+    userdata['dob'] = userdata['dob'].strftime("%Y-%m-%d")
+    print(userdata)
     if len(users) > 0:
-        return render_template("editprofile.html", user = users[0], EDITPROFILE=EDITPROFILE)
+        return render_template("editprofile.html", user = userdata, EDITPROFILE=EDITPROFILE)
     else:
         flash("Aw snap! Something went wrong. Try again in a few hours", "error")
         return redirect("/success")
