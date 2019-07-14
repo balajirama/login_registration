@@ -42,6 +42,32 @@
             {% endif %}
         </div>
         {% endfor %}
+        <div class="form-group">
+            <label>Select your favorite languages:</label>
+            {% with msgs = get_flashed_messages(category_filter=["languages"]) %}
+            {% for msg in msgs %}
+            <div class="alert alert-danger" role="alert">
+                {{msg}}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            {% endfor %}
+            {% endwith %}
+            <div class="row">
+                {% for language in LANGUAGES %}
+                {% set lang = language['name'] %}
+                <div class="mx-4 form-check col col-xl-4 col-lg-4 col-md-8 col-sm-8 col-xs-8">
+                    {% if lang in checkedlanguages %}
+                    <input class="form-check-input" type="checkbox" name="{{lang}}" checked>
+                    {% else %}
+                    <input class="form-check-input" type="checkbox" name="{{lang}}">
+                    {% endif %}
+                    <label class="form-check-label">{{lang}}</label>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
         <div class="row">
             <div class="col col-lg-3">
                 <a href="/success" class="btn btn-block btn-primary btn-lg">Home</a>

@@ -28,6 +28,7 @@
             <h5 class="card-title">{{user['firstname']}} {{user['lastname']}}</h5>
             <p class="card-text">{{user['email']}}</p>
             <p class="card-text">Birthday: {{user['dob'].strftime("%B %d")}}</p>
+            <p class="card-text">Favorite languages: {{ user['languages'] }}</p>
             <div class="row">
                 <div class="col col-lg-4">
                     <a href="/success" class="btn btn-primary btn-lg btn-block">Home</a>

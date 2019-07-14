@@ -122,15 +122,14 @@ def register():
     if is_valid:
         mysql = connectToMySQL(dbname)
         if len(mysql.query_db("SELECT * FROM users WHERE email = %(email)s", request.form)) == 0:
+            dob = datetime.strptime(request.form['dob'], "%Y-%m-%d")
             data = dict()
             for name in request.form.keys():
                 data[name] = request.form[name]
             data['pswdhash'] = bcrypt.generate_password_hash(request.form['password'])
-            dob = datetime.strptime(request.form['dob'], "%Y-%m-%d")
             data['dob'] = dob
-            data['languages'] = gen_lang_str()
-            status = mysql.query_db("INSERT INTO users ( firstname, lastname, email, pswdhash, created_at, updated_at, dob, languages ) VALUES ( %(firstname)s, %(lastname)s, %(email)s, %(pswdhash)s, NOW(), NOW(), %(dob)s, %(languages)s ) ;", data)
-            if status:
+            data['languages'] = ', '.join(get_selected_languages(request.form))
+            if mysql.query_db("INSERT INTO users ( firstname, lastname, email, pswdhash, created_at, updated_at, dob, languages ) VALUES ( %(firstname)s, %(lastname)s, %(email)s, %(pswdhash)s, NOW(), NOW(), %(dob)s, %(languages)s ) ;", data):
                 flash("Successfully registered "+request.form['email']+". Try logging in!", "success")
                 if 'reg' in session:
                     del session['reg']
@@ -164,7 +163,7 @@ def viewprofile():
         flash(not_logged_in, "error")
         return redirect("/")
     mysql = connectToMySQL(dbname)
-    users = mysql.query_db("SELECT id, firstname, lastname, email, created_at, dob FROM users WHERE id = %(id)s", {'id': session['id']})
+    users = mysql.query_db("SELECT id, firstname, lastname, email, created_at, dob, languages FROM users WHERE id = %(id)s", {'id': session['id']})
     if len(users) > 0:
         return render_template("profile.html", user = users[0])
     else:
@@ -177,14 +176,15 @@ def editprofile():
         flash(not_logged_in, "error")
         return redirect("/")
     mysql = connectToMySQL(dbname)
-    users = mysql.query_db("SELECT id, firstname, lastname, email, created_at, dob FROM users WHERE id = %(id)s", {'id': session['id']})
+    users = mysql.query_db("SELECT id, firstname, lastname, email, created_at, languages, dob FROM users WHERE id = %(id)s", {'id': session['id']})
     userdata = dict()
     for key in users[0].keys():
         userdata[key] = users[0][key]
     userdata['dob'] = userdata['dob'].strftime("%Y-%m-%d")
     print(userdata)
+    checkedlanguages = userdata['languages'].split(', ')
     if len(users) > 0:
-        return render_template("editprofile.html", user = userdata, EDITPROFILE=EDITPROFILE)
+        return render_template("editprofile.html", user = userdata, EDITPROFILE=EDITPROFILE, LANGUAGES=LANGUAGES, checkedlanguages=checkedlanguages)
     else:
         flash("Aw snap! Something went wrong. Try again in a few hours", "error")
         return redirect("/success")
@@ -194,20 +194,15 @@ def updateprofile():
     if 'id' not in session:
         flash(not_logged_in, "error")
         return redirect("/")
-    mysql = connectToMySQL(dbname)
-    is_valid = True
-    if len(request.form['firstname']) < 2:
-        flash("First name must have at least two characters", "firstname")
-        is_valid = False
-    if len(request.form['lastname']) < 2:
-        is_valid = False
-        flash("Last name must have at least two characters", "lastname")
-    if not EMAIL_REGEXP.match(request.form['email']):
-        is_valid = False
-        flash("Email not in correct format", 'email')
-    if is_valid:
-        status = mysql.query_db("UPDATE users SET firstname = %(firstname)s, lastname = %(lastname)s, email = %(email)s WHERE id = %(id)s;", request.form)
-        if status:
+    if validate_nonpassword(request.form):
+        mysql = connectToMySQL(dbname)
+        data = dict()
+        for key in request.form.keys():
+            data[key] = request.form[key]
+        data['dob'] = datetime.strptime(request.form['dob'], '%Y-%m-%d')
+        data['languages'] = ', '.join(get_selected_languages(request.form))
+        data['id'] = session['id']
+        if mysql.query_db("UPDATE users SET firstname = %(firstname)s, lastname = %(lastname)s, email = %(email)s, dob = %(dob)s, languages = %(languages)s, updated_at = NOW() WHERE id = %(id)s;", data):
             flash("Updated your profile", "success")
         else:
             flash("Something went wrong. It's us, not you. Try again later.", "error")
