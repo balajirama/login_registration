@@ -15,6 +15,8 @@ EMAIL_REGEXP = re.compile(r"^[a-zA-Z0-9.+_-]+@[a-zA-Z0-9]+\.[a-zA-Z]+$")
 NUM_REGEX = re.compile(r"^.*[0-9]+.*")
 CAP_REGEX = re.compile(r"^.*[A-Z]+.*")
 
+not_logged_in = "You're not logged in"
+
 sql = {'db': connectToMySQL(dbname)}
 EDITPASSWORD = sql['db'].query_db("SELECT * FROM editpassword_form ORDER BY itemid;")
 REGISTRATION = sql['db'].query_db("SELECT * FROM registration_form ORDER BY itemid;")
@@ -24,6 +26,8 @@ del sql['db']
 
 @app.route("/")
 def mainpage():
+    if 'id' in session:
+        return redirect("/success")
     print(get_flashed_messages())
     if 'reg' not in session:
         session['reg'] = {
@@ -47,44 +51,74 @@ def login():
     flash("You could not be logged in", "error")
     return redirect("/")
 
-@app.route("/register", methods=["POST"])
-def register():
+def is_age_over(num, dob):
+    dob = datetime.strptime(dob, '%Y-%m-%d')
+    year = dob.year + num
+    nth_bday = datetime.strptime(f"{year}-{dob.month}-{dob.day}", "%Y-%m-%d")
+    today = datetime.today()
+    return (today - nth_bday).days >= 0
+
+def get_age(dob):
+    age = -1
+    while(is_age_over(age+1, dob)):
+        age += 1
+    return age
+
+def get_selected_languages(fields):
+    langs = []
+    for language in LANGUAGES:
+        if language['name'] in fields:
+            langs.append(language['name'])
+    return langs
+
+def validate_nonpassword(fields):
     is_valid = True
-    print(request.form)
-    if not EMAIL_REGEXP.match(request.form['email']):
+    if not EMAIL_REGEXP.match(fields['email']):
         flash("Not a valid email", "email")
         is_valid = False
-    if len(request.form['password']) < 8:
-        flash("Your password must be at least eight characters", "password")
-        is_valid = False
-    if not(NUM_REGEX.match(request.form['password']) and CAP_REGEX.match(request.form['password'])):
-        flash("Password must contain at least one capital letter and one digit", "password")
-        is_valid = False
-    if len(request.form['firstname']) < 2:
+    if len(fields['firstname']) < 2:
         flash("First name must have at least two characters", "firstname")
         is_valid = False
-    if len(request.form['lastname']) < 2:
+    if len(fields['lastname']) < 2:
         flash("Last name must have at least two characters", "lastname")
         is_valid = False
-    if (request.form['confirm'] == "") or (request.form['password'] != request.form['confirm']):
-        flash("Passwords do not match", "confirm")
-        is_valid = False
-    dob = datetime.strptime(request.form['dob'], "%Y-%m-%d")
-    today = datetime.today()
-    if (today - dob).days / 365 < 10.0:
+    if not is_age_over(10, fields['dob']):
         is_valid = False
         flash("You're too young to register", "dob")
-    langcount = 0
+    if len(get_selected_languages(fields)) < 2:
+        flash("Select at least two languages", "languages")
+        is_valid = False
+    return is_valid
+
+def validate_password(fields, categories=['password', 'confirm']):
+    is_valid = True
+    if len(fields[categories[0]]) < 8:
+        flash("Your password must be at least eight characters", categories[0])
+        is_valid = False
+    if not(NUM_REGEX.match(fields[categories[0]]) and CAP_REGEX.match(fields[categories[0]])):
+        flash("Password must contain at least one capital letter and one digit", categories[0])
+        is_valid = False
+    if (fields['confirm'] == "") or (fields[categories[0]] != fields[categories[1]]):
+        flash("Passwords do not match", categories[1])
+        is_valid = False
+    return is_valid
+
+def gen_lang_str():
     langstr = ""
     for language in LANGUAGES:
         if language['name'] in request.form:
-            langcount += 1
             if len(langstr) > 0:
                 langstr += " "
             langstr += language['name']
-    if langcount < 2:
-        flash("Select at least two languages", "languages")
-        is_valid = False
+    return langstr
+
+def validate_all_fields(fields):
+    return (validate_nonpassword(fields) and validate_password(fields))
+
+@app.route("/register", methods=["POST"])
+def register():
+    print(request.form)
+    is_valid = validate_all_fields(request.form)
     if is_valid:
         mysql = connectToMySQL(dbname)
         if len(mysql.query_db("SELECT * FROM users WHERE email = %(email)s", request.form)) == 0:
@@ -92,8 +126,9 @@ def register():
             for name in request.form.keys():
                 data[name] = request.form[name]
             data['pswdhash'] = bcrypt.generate_password_hash(request.form['password'])
+            dob = datetime.strptime(request.form['dob'], "%Y-%m-%d")
             data['dob'] = dob
-            data['languages'] = langstr
+            data['languages'] = gen_lang_str()
             status = mysql.query_db("INSERT INTO users ( firstname, lastname, email, pswdhash, created_at, updated_at, dob, languages ) VALUES ( %(firstname)s, %(lastname)s, %(email)s, %(pswdhash)s, NOW(), NOW(), %(dob)s, %(languages)s ) ;", data)
             if status:
                 flash("Successfully registered "+request.form['email']+". Try logging in!", "success")
@@ -113,11 +148,10 @@ def register():
 
 @app.route("/success")
 def success():
-    if 'id' in session:
-        return render_template("success.html")
-    else:
-        flash("You're not yet logged in", "error")
+    if 'id' not in session:
+        flash(not_logged_in, "error")
         return redirect("/")
+    return render_template("success.html")
 
 @app.route("/logout")
 def logout():
@@ -126,6 +160,9 @@ def logout():
 
 @app.route("/viewprofile")
 def viewprofile():
+    if 'id' not in session:
+        flash(not_logged_in, "error")
+        return redirect("/")
     mysql = connectToMySQL(dbname)
     users = mysql.query_db("SELECT id, firstname, lastname, email, created_at, dob FROM users WHERE id = %(id)s", {'id': session['id']})
     if len(users) > 0:
@@ -136,6 +173,9 @@ def viewprofile():
 
 @app.route("/editprofile")
 def editprofile():
+    if 'id' not in session:
+        flash(not_logged_in, "error")
+        return redirect("/")
     mysql = connectToMySQL(dbname)
     users = mysql.query_db("SELECT id, firstname, lastname, email, created_at, dob FROM users WHERE id = %(id)s", {'id': session['id']})
     userdata = dict()
@@ -151,6 +191,9 @@ def editprofile():
 
 @app.route("/updateprofile", methods=['POST'])
 def updateprofile():
+    if 'id' not in session:
+        flash(not_logged_in, "error")
+        return redirect("/")
     mysql = connectToMySQL(dbname)
     is_valid = True
     if len(request.form['firstname']) < 2:
@@ -174,10 +217,16 @@ def updateprofile():
 
 @app.route("/changepasswd")
 def changepasswd():
+    if 'id' not in session:
+        flash(not_logged_in, "error")
+        return redirect("/")
     return render_template("change_password.html", EDITPASSWORD=EDITPASSWORD)
 
 @app.route("/updatepassword", methods=['POST'])
 def updatepassword():
+    if 'id' not in session:
+        flash(not_logged_in, "error")
+        return redirect("/")
     mysql = connectToMySQL(dbname)
     rows = mysql.query_db("SELECT id, pswdhash FROM users WHERE id = %(id)s", {'id': session['id']})
     is_valid = True
@@ -188,16 +237,14 @@ def updatepassword():
     if not bcrypt.check_password_hash(rows[0]['pswdhash'], request.form['currentpassword']):
         is_valid = False
         flash('Current password does not match', 'currentpassword')
-    if len(request.form['newpassword']) < 2:
+        return redirect("/changepasswd")
+    if not validate_password(request.form, categories=['newpassword', 'confirm']):
         is_valid = False
-        flash("Password must be at least two characters long", "newpassword")
-    if (request.form == "") or (request.form['newpassword'] != request.form['confirm']):
-        is_valid = False
-        flash("Password confirmation must match", "confirm")
     if not is_valid:
         return redirect("/changepasswd")
     else:
-        status = mysql.query_db("UPDATE users SET pswdhash = %(pswdhash)s WHERE id = %(id)s", rows[0])
+        pswdhash = bcrypt.generate_password_hash(request.form['newpassword'])
+        status = mysql.query_db("UPDATE users SET pswdhash = %(pswdhash)s WHERE id = %(id)s", {'id': rows[0]['id'], 'pswdhash': pswdhash})
         if status:
             flash('Password changed', 'success')
         else:
@@ -206,6 +253,9 @@ def updatepassword():
 
 @app.route("/deleteprofile")
 def deleteprofile():
+    if 'id' not in session:
+        flash(not_logged_in, "error")
+        return redirect("/")
     mysql = connectToMySQL(dbname)
     mysql.query_db("DELETE FROM users WHERE id = %(id)s", {'id': session['id']})
     return redirect("/logout")

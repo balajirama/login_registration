@@ -28,7 +28,7 @@
             <label>{{item['label']}}</label>
             {% with successes = get_flashed_messages(category_filter=[item['name']]) %}
             {% for message in successes %}
-            <div class="alert alert-success" role="alert">
+            <div class="alert alert-danger" role="alert">
                 {{ message }}
                 <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
@@ -38,7 +38,7 @@
             {% endwith %}
             <input type="{{item['type']}}" class="form-control" placeholder="{{user[item['name']]}}" name="{{item['name']}}" value="{{user[item['name']]}}">
             {% if item['small_text'] != None %}
-            <small id="emailHelp" class="form-text text-muted">{{item['small_text']}}</small>
+            <small class="form-text text-muted">{{item['small_text']}}</small>
             {% endif %}
         </div>
         {% endfor %}
@@ -53,6 +53,7 @@
                 <button type="submit" class="btn btn-block btn-danger btn-lg">Update profile</button>
             </div>
             <div class="col col-lg-3">
+                <!-- confirmdelete is a modal in confirmdelete.html -->
                 <a data-target="#confirmdelete" data-toggle="modal" class="btn btn-block btn-secondary btn-lg">Delete profile</a>
             </div>
         </div>
